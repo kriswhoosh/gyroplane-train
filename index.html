@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Poster — Gyroplane-Train</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="../Avon-Lady/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../Avon-Lady/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../Avon-Lady/favicon-16x16.png">
+    <link rel="manifest" href="../Avon-Lady/site.webmanifest">
+
+    <style>
+        /* Gyroplane-Train theme: teal / slate */
+        :root {
+            --bg: #f8fafc;
+            --card: #e2e8f0;
+            --line: #94a3b8;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --accent: #14b8a6;
+            --brand: #0d9488;
+            --pink: #0d9488;
+            --insta: #0d9488;
+            --input-bg: #fff;
+        }
+        body { background: var(--bg); color: var(--ink); font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; overflow-x: hidden; }
+        .interface { display: grid; grid-template-columns: 420px 1fr; gap: 20px; width: 98%; margin: auto; }
+        .controls { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--line); height: 95vh; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .thumb-strip { width: 80px; height: 800px; position: absolute; left: 10px; top: 150px; display: flex; flex-direction: column; gap: 10px; z-index: 10; }
+        .thumb-box { width: 70px; height: 70px; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; opacity: 0.6; }
+        .thumb-box.active { border-color: var(--brand); opacity: 1; transform: scale(1.05); }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
+        .img-slot { background: rgba(0,0,0,0.2); border: 1px solid var(--line); padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 12px; }
+        .img-slot.active { border-color: var(--pink); background: rgba(13, 148, 136, 0.12); }
+        .viewer-box { position: relative; width: 1080px; height: 1920px; border: 2px solid var(--line); background: #fff; overflow: hidden; border-radius: 16px; transform-origin: top left; transform: scale(0.35); }
+        #paint-area { width: 1080px; height: 1920px; float: left; position: relative; box-sizing: border-box; display: flex; flex-direction: row; }
+        .image-stage-wrap { display: flex; flex-direction: row; width: 100%; height: 100%; min-width: 0; }
+        .image-stage-left { width: 1080px; flex-shrink: 0; position: relative; }
+        .image-stage-right { position: absolute; right: 0; top: 0; width: 220px; height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; pointer-events: none; }
+        .image-stage-right.meta-top { justify-content: flex-start; padding-top: 190px; }
+        .image-stage-right.meta-bottom { justify-content: flex-end; padding-bottom: 40px; }
+        .image-stage-right .img-meta { pointer-events: auto; }
+        #text-area { display: none; }
+        input[type="text"], textarea { width: 100%; background: var(--input-bg); color: var(--brand); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+        .chip-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .chip { background: var(--line); color: var(--muted); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid transparent; }
+        .chip.active { background: var(--brand); color: var(--bg); font-weight: bold; }
+        .audio-btn { background: #0ea5e9; color: white; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; display: block; text-align: center; margin-bottom: 10px; font-size: 14px; }
+        .pink-btn { background: var(--pink); color: #fff; padding: 12px; border: none; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 15px; font-weight: 900; text-transform: uppercase; font-size: 14px; }
+        .rec-btn { background: var(--accent); color: #fff; width: 100%; padding: 20px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 16px; margin-bottom: 8px; }
+        .insta-btn { background: var(--insta); color: #fff; width: 100%; padding: 20px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 16px; }
+        canvas { display: none; }
+        .img-meta { background: rgba(226, 232, 240, 0.7); padding: 5px; border-radius: 10px; width: fit-content; max-width: 100%; font-size: 18px; border: 1px solid var(--line); pointer-events: auto; text-align: center; }
+        .img-meta-price { font-weight: 800; color: #0d9488; margin-bottom: 6px; font-size: 22px; }
+        .img-meta-desc { color: #334155; font-size: 20px; white-space: pre-line; }
+    </style>
+</head>
+<body>
+
+<div class="interface">
+    <div class="controls">
+        <h2 style="color: var(--brand); margin-top:0; text-align:center;">Master Poster — Gyroplane-Train</h2>
+
+        <input type="text" id="vidTitle" placeholder="MAIN TITLE">
+        <input type="text" id="vidSub" placeholder="SUBTITLE">
+
+        <div class="chip-container">
+            <div class="chip active" onclick="setTrans('melt')">MELT</div>
+            <div class="chip" onclick="setTrans('swipe')">SWIPE</div>
+            <div class="chip" onclick="setTrans('dissolve')">DISSOLVE</div>
+            <div class="chip" onclick="setTrans('swap')">SWAP</div>
+        </div>
+
+        <div class="chip-container">
+            <div class="chip overlay-chip" onclick="setOverlayPos('top')">META: TOP</div>
+            <div class="chip overlay-chip active" onclick="setOverlayPos('bottom')">META: BOTTOM</div>
+        </div>
+
+        <button onclick="clearAlignment()" class="pink-btn">✔️ LOCK ALIGNMENT</button>
+
+        <div id="image-inputs"></div>
+        <textarea id="mainScript" style="height:120px;" placeholder="Post Text..."></textarea>
+
+        <label class="audio-btn">🎵 UPLOAD TRACK (MP4/MP3) <input type="file" id="audioInput" accept="audio/*,video/mp4" style="display:none" onchange="loadAudio(event)"></label>
+        <div id="audioStatus" style="font-size:11px; color:var(--muted); margin-bottom:15px; text-align:center;">No track loaded.</div>
+
+        <button onclick="record()" class="insta-btn">📸 START INSTA-READY PRODUCTION</button>
+
+        <div id="status" style="margin-top:10px; color: var(--brand); font-weight: bold; text-align:center;">System Standby.</div>
+        <a id="dlLink" href="#" style="display:none">Download</a>
+    </div>
+
+    <div class="viewer-box" id="viewerContainer">
+        <div class="thumb-strip" id="thumbStrip"></div>
+        <div id="paint-area">
+            <div class="image-stage-wrap">
+                <div class="image-stage-left"><div id="stage"></div></div>
+                <div class="image-stage-right meta-bottom" id="meta-panel"></div>
+            </div>
+        </div>
+        <div id="text-area"></div>
+    </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+    const MAX_IMAGES = 6;
+    let imageData = Array.from({length: MAX_IMAGES}, () => ({ src: null, x: 0, y: 0, s: 1, imgObj: null, price: '', desc: '' }));
+    let alignIndex = -1, transMode = 'melt', audioBuffer = null, audioCtx = null;
+    let overlayPos = 'bottom';
+
+    // Theme for canvas/video export (matches this client's colours)
+    const THEME = {
+        bg: '#ffffff',
+        titleBar: '#0d9488',
+        titleText: '#ffffff',
+        subtitleBar: '#1e293b',
+        subtitleText: '#ffffff',
+        textPanelBg: '#e2e8f0',
+        textPanelInk: '#0f172a',
+        metaBoxBg: 'rgba(226, 232, 240, 0.7)',
+        metaPrice: '#0d9488',
+        metaDesc: '#334155'
+    };
+
+    function setTrans(m) {
+        transMode = m;
+        document.querySelectorAll('.chip').forEach(c => {
+            if (!c.classList.contains('overlay-chip')) {
+                c.classList.toggle('active', c.innerText.toLowerCase() === m);
+            }
+        });
+    }
+
+    function setOverlayPos(pos) {
+        overlayPos = pos;
+        document.querySelectorAll('.overlay-chip').forEach(c => {
+            const isTop = c.innerText.toLowerCase().includes('top');
+            c.classList.toggle('active', (pos === 'top' && isTop) || (pos === 'bottom' && !isTop));
+        });
+        const panel = document.getElementById('meta-panel');
+        if (panel) {
+            panel.classList.remove('meta-top', 'meta-bottom');
+            panel.classList.add('meta-' + pos);
+        }
+        updateStage();
+    }
+
+    async function loadAudio(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                audioBuffer = await audioCtx.decodeAudioData(ev.target.result);
+                document.getElementById('audioStatus').innerText = "TRACK READY: " + file.name;
+            } catch (err) { alert("Audio Format Error."); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    const inputContainer = document.getElementById('image-inputs');
+    for(let i=0; i < MAX_IMAGES; i++) {
+        const div = document.createElement('div'); div.className = `img-slot`; div.id = `slot-${i}`;
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <strong>SLOT ${i+1}</strong>
+                <input type="radio" name="focus" onclick="setAlign(${i})">
+            </div>
+            <input type="file" onchange="loadImg(event, ${i})" style="width:100%; font-size:10px; margin-top:5px;">
+            <input type="text" placeholder="Price Tag (e.g. $40)" style="margin-top:6px; font-size:11px;" oninput="setPrice(${i}, this.value)">
+            <textarea placeholder="Short description" rows="3" style="margin-top:4px; font-size:11px; width:100%; resize:vertical; box-sizing:border-box;" oninput="setDesc(${i}, this.value)"></textarea>
+        `;
+        inputContainer.appendChild(div);
+        const thumb = document.createElement('div'); thumb.className = 'thumb-box'; thumb.id = `thumb-${i}`;
+        document.getElementById('thumbStrip').appendChild(thumb);
+    }
+
+    function loadImg(e, idx) {
+        const img = new Image(); img.src = URL.createObjectURL(e.target.files[0]);
+        img.onload = () => { imageData[idx].src = img.src; imageData[idx].imgObj = img; document.getElementById(`thumb-${idx}`).innerHTML = `<img src="${img.src}">`; updateStage(); };
+    }
+
+    function setPrice(idx, val) {
+        imageData[idx].price = val;
+        updateStage();
+    }
+
+    function setDesc(idx, val) {
+        imageData[idx].desc = val;
+        updateStage();
+    }
+
+    function setAlign(idx) {
+        alignIndex = idx;
+        document.querySelectorAll('.img-slot').forEach(s => s.classList.remove('active'));
+        document.getElementById(`slot-${idx}`).classList.add('active');
+        document.querySelectorAll('.thumb-box').forEach((b, i) => b.classList.toggle('active', i === idx));
+        updateStage();
+    }
+
+    function clearAlignment() {
+        alignIndex = -1;
+        document.querySelectorAll('.img-slot').forEach(s => s.classList.remove('active'));
+        updateStage();
+    }
+
+    window.onkeydown = e => {
+        if(alignIndex < 0) return;
+        let d = imageData[alignIndex];
+        if (e.key === "ArrowUp") d.y -= 1; if (e.key === "ArrowDown") d.y += 1;
+        if (e.key === "ArrowLeft") d.x -= 1; if (e.key === "ArrowRight") d.x += 1;
+        if (e.key === "+") d.s += 0.001; if (e.key === "-") d.s -= 0.001;
+        updateStage();
+    };
+
+    function updateStage() {
+        const stage = document.getElementById('stage');
+        const metaPanel = document.getElementById('meta-panel');
+        stage.innerHTML = '';
+        if (metaPanel) metaPanel.innerHTML = '';
+        if (metaPanel) {
+            metaPanel.classList.remove('meta-top', 'meta-bottom');
+            metaPanel.classList.add('meta-' + overlayPos);
+        }
+        if(alignIndex >= 0 && imageData[alignIndex].src) {
+            const d = imageData[alignIndex];
+            const img = new Image(); img.src = d.src;
+            img.style.width = "600px"; img.style.position = "absolute"; img.style.top = "150px"; img.style.left = "100px";
+            img.style.transform = `translate(${d.x}px, ${d.y}px) scale(${d.s})`;
+            stage.appendChild(img);
+
+            if (d.price || d.desc) {
+                const meta = document.createElement('div');
+                meta.className = 'img-meta';
+                meta.innerHTML = `
+                    <div class="img-meta-price">${d.price || ''}</div>
+                    <div class="img-meta-desc">${d.desc || ''}</div>
+                `;
+                if (metaPanel) metaPanel.appendChild(meta);
+            }
+        }
+    }
+
+    async function record() {
+        const activeImages = imageData.filter(d => d.src !== null);
+        if(activeImages.length < 2) return alert("Upload at least 2 images.");
+        if(!audioBuffer) return alert("Upload audio track first.");
+
+        const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+        canvas.width = 1080;
+        canvas.height = 1920;
+
+        const stream = canvas.captureStream(30);
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        const dest = audioCtx.createMediaStreamDestination();
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer; source.connect(dest); source.connect(audioCtx.destination);
+        stream.addTrack(dest.stream.getAudioTracks()[0]); source.start(0);
+
+        const SLIDE_DURATION_MS = 20000;
+        const TRANS_DURATION_MS = 2000;
+        const totalDuration = activeImages.length * SLIDE_DURATION_MS;
+
+        const width = canvas.width, height = canvas.height;
+        const videoBitrate = (width * height >= 1080 * 1920) ? 12000000 : 8000000;
+        const audioBitrate = 256000;
+        const mimeCandidates = [
+            'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+            'video/mp4; codecs="avc1.42E01E"',
+            'video/mp4',
+            'video/webm; codecs="vp9, opus"',
+            'video/webm; codecs="vp9"',
+            'video/webm'
+        ];
+        let chosenMime = 'video/webm';
+        for (const m of mimeCandidates) {
+            if (MediaRecorder.isTypeSupported(m)) {
+                chosenMime = m;
+                break;
+            }
+        }
+        const useMp4 = chosenMime.startsWith('video/mp4');
+        const recOptions = {
+            mimeType: chosenMime,
+            videoBitsPerSecond: videoBitrate,
+            audioBitsPerSecond: audioBitrate
+        };
+
+        const rec = new MediaRecorder(stream, recOptions);
+        const chunks = [];
+        rec.ondataavailable = e => chunks.push(e.data);
+        rec.onstop = () => {
+            source.stop();
+            const blob = new Blob(chunks, { type: chosenMime });
+            const dl = document.getElementById('dlLink');
+            dl.href = URL.createObjectURL(blob);
+            dl.download = 'gyroplane_train_insta_final.' + (useMp4 ? 'mp4' : 'webm');
+            dl.click();
+            document.getElementById('status').innerText = "DONE!";
+        };
+
+        rec.start(100);
+        let startTime = null;
+        const scriptVal = document.getElementById('mainScript').value, titleVal = document.getElementById('vidTitle').value.toUpperCase(), subVal = document.getElementById('vidSub').value;
+
+        function render(t) {
+            if(!startTime) startTime = t;
+            let elap = t - startTime;
+
+            ctx.fillStyle = THEME.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const instaPadH = 80;
+            const instaTitleTop = 80, instaTitleH = 120;
+            const instaSubTop = 200, instaSubH = 120;
+            const instaTextTop = 320, instaTextH = 360;
+            const instaImgTop = 680, instaImgH = 1240;
+            const imgAreaW = 1080, imgAreaH = instaImgH;
+            const imgBaseX = 0, imgBaseY = instaImgTop;
+            const textStartX = 0, textFrameW = 1080;
+
+            ctx.fillStyle = THEME.titleBar;
+            ctx.fillRect(0, instaTitleTop, canvas.width, instaTitleH);
+            ctx.fillStyle = THEME.titleText;
+            ctx.font = "bold 48px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText(titleVal, 540, instaTitleTop + 78);
+
+            ctx.fillStyle = THEME.subtitleBar;
+            ctx.fillRect(0, instaSubTop, canvas.width, instaSubH);
+            ctx.fillStyle = THEME.subtitleText;
+            ctx.font = "bold 32px Segoe UI";
+            ctx.fillText(subVal, 540, instaSubTop + 78);
+
+            const gProg = Math.min(elap / totalDuration, 1);
+            const segmentIndex = Math.min(Math.floor(elap / SLIDE_DURATION_MS), activeImages.length - 1);
+            const withinSegment = elap % SLIDE_DURATION_MS;
+            const inTransition = withinSegment >= (SLIDE_DURATION_MS - TRANS_DURATION_MS) && (segmentIndex + 1) < activeImages.length;
+            const transProgress = inTransition
+                ? (withinSegment - (SLIDE_DURATION_MS - TRANS_DURATION_MS)) / TRANS_DURATION_MS
+                : 0;
+            const sP = Math.max(0, Math.min(transProgress, 1));
+
+            const iA = activeImages[segmentIndex];
+            const iB = inTransition ? activeImages[segmentIndex + 1] : null;
+            const activeMeta = sP >= 0.5 && iB ? iB : iA;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(imgBaseX, imgBaseY, imgAreaW, instaImgH);
+            ctx.clip();
+
+            if (!iA || !iA.imgObj) {
+            } else if (!inTransition || !iB || !iB.imgObj) {
+                ctx.translate(imgBaseX + iA.x, imgBaseY + iA.y);
+                ctx.scale(iA.s, iA.s);
+                ctx.drawImage(iA.imgObj, 0, 0, imgAreaW, imgAreaH);
+            } else {
+                [iA, iB].forEach((img, i) => {
+                    if (!img.imgObj) return;
+                    ctx.save();
+                    const xBase = imgBaseX + img.x, yBase = imgBaseY + img.y;
+                    if (transMode === 'swipe') {
+                        const xOff = (i === 0) ? -sP * imgAreaW : imgAreaW - (sP * imgAreaW);
+                        ctx.translate(xBase + xOff, yBase);
+                    } else if (transMode === 'dissolve') {
+                        ctx.globalAlpha = (i === 0) ? 1 - sP : sP;
+                        ctx.translate(xBase, yBase);
+                    } else if (transMode === 'swap') {
+                        ctx.globalAlpha = (sP < 0.5 && i === 0) || (sP >= 0.5 && i === 1) ? 1 : 0;
+                        ctx.translate(xBase, yBase);
+                    } else {
+                        ctx.globalAlpha = (i === 0) ? 1 : sP;
+                        ctx.translate(xBase, yBase);
+                    }
+                    ctx.scale(img.s, img.s);
+                    ctx.drawImage(img.imgObj, 0, 0, imgAreaW, imgAreaH);
+                    ctx.restore();
+                });
+            }
+            ctx.restore();
+
+            if (activeMeta && (activeMeta.price || activeMeta.desc)) {
+                const pad = 5, margin = 40, radius = 14;
+                ctx.font = "bold 36px Segoe UI";
+                const priceW = activeMeta.price ? ctx.measureText(activeMeta.price).width : 0;
+                ctx.font = "24px Segoe UI";
+                const desc = (activeMeta.desc || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+                const maxChars = 35;
+                const descLines = [];
+                desc.split("\n").forEach(paragraph => {
+                    let line = "";
+                    paragraph.split(" ").forEach(word => {
+                        const test = line ? line + " " + word : word;
+                        if (test.length > maxChars && line) {
+                            descLines.push(line);
+                            line = word;
+                        } else {
+                            line = test;
+                        }
+                    });
+                    if (line.trim()) descLines.push(line.trim());
+                });
+                let descW = 0;
+                descLines.forEach(l => { descW = Math.max(descW, ctx.measureText(l).width); });
+                const boxW = Math.max(priceW, descW) + pad * 2;
+                const lineH = 26;
+                const boxH = pad + (activeMeta.price ? 36 + (descLines.length ? 8 : 0) : 0) + descLines.length * lineH + pad;
+                const boxX = 1080 - boxW - margin;
+                const isTop = overlayPos === 'top';
+                const boxY = isTop ? (imgBaseY + 40) : (imgBaseY + instaImgH - boxH - 40);
+
+                ctx.save();
+                ctx.fillStyle = THEME.metaBoxBg;
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+                ctx.fill();
+
+                ctx.textAlign = "center";
+                const centerX = boxX + boxW / 2;
+                let y = boxY + pad;
+                if (activeMeta.price) {
+                    ctx.fillStyle = THEME.metaPrice;
+                    ctx.font = "bold 36px Segoe UI";
+                    ctx.fillText(activeMeta.price, centerX, y + 28);
+                    y += 36 + 8;
+                }
+                if (descLines.length) {
+                    ctx.fillStyle = THEME.metaDesc;
+                    ctx.font = "24px Segoe UI";
+                    descLines.forEach(l => {
+                        ctx.fillText(l, centerX, y + 20);
+                        y += lineH;
+                    });
+                }
+                ctx.restore();
+            }
+
+            const textAreaTop = instaTextTop;
+            const textAreaHeight = instaTextH;
+            const padX = 60;
+            const padY = 40;
+            const maxWidth = textFrameW - padX * 2;
+            const lineSpacingMult = 1.55;
+
+            ctx.fillStyle = THEME.textPanelBg;
+            ctx.fillRect(0, textAreaTop, textFrameW, textAreaHeight);
+            ctx.fillStyle = THEME.textPanelInk;
+            ctx.textAlign = "center";
+
+            function wrapLinesForFs(fs) {
+                ctx.font = `bold ${fs}px Segoe UI`;
+                const res = [];
+                scriptVal.split('\n').forEach(p => {
+                    const words = p.split(' ').filter(Boolean);
+                    let line = "";
+                    words.forEach(word => {
+                        const testLine = line ? line + " " + word : word;
+                        if (ctx.measureText(testLine).width > maxWidth && line) {
+                            res.push(line);
+                            line = word;
+                        } else {
+                            line = testLine;
+                        }
+                    });
+                    if (line) res.push(line);
+                });
+                return res;
+            }
+
+            const maxFs = 40, minFs = 14;
+            let fs = maxFs, lines = [], lineH = 0;
+            while (fs >= minFs) {
+                lines = wrapLinesForFs(fs);
+                lineH = fs * lineSpacingMult;
+                const needed = lines.length * lineH;
+                if (needed <= (textAreaHeight - padY * 2)) break;
+                fs -= 1;
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, textAreaTop, textFrameW, textAreaHeight);
+            ctx.clip();
+
+            const totalTextHeight = lines.length * lineH;
+            const startY = textAreaTop + (textAreaHeight - totalTextHeight) / 2 + fs;
+            lines.forEach((l, i) => {
+                ctx.fillText(l, textStartX + textFrameW / 2, startY + i * lineH);
+            });
+
+            ctx.restore();
+
+            if(gProg < 1) { requestAnimationFrame(render); document.getElementById('status').innerText = `PRODUCING: ${Math.round(gProg * 100)}%`; }
+            else { rec.stop(); }
+        }
+        requestAnimationFrame(render);
+    }
+</script>
+</body>
+</html>
