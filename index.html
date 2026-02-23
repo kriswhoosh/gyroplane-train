@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Master Poster — Gyroplane-Train</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="../Avon-Lady/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../Avon-Lady/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../Avon-Lady/favicon-16x16.png">
-    <link rel="manifest" href="../Avon-Lady/site.webmanifest">
+    <title>Gyroplane-Train</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
 
     <style>
         /* Gyroplane-Train theme: teal / slate */
         :root {
             --bg: #f8fafc;
-            --card: #e2e8f0;
+            --card: #78a0d6;
             --line: #94a3b8;
             --ink: #0f172a;
             --muted: #64748b;
@@ -49,16 +49,16 @@
         .rec-btn { background: var(--accent); color: #fff; width: 100%; padding: 20px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 16px; margin-bottom: 8px; }
         .insta-btn { background: var(--insta); color: #fff; width: 100%; padding: 20px; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 16px; }
         canvas { display: none; }
-        .img-meta { background: rgba(226, 232, 240, 0.7); padding: 5px; border-radius: 10px; width: fit-content; max-width: 100%; font-size: 18px; border: 1px solid var(--line); pointer-events: auto; text-align: center; }
+        .img-meta { background: rgba(226, 232, 240, 0.7); padding: 5px; border-radius: 10px; width: fit-content; max-width: 100%; font-size: 18px; border: 1px solid var(--line); pointer-events: auto; text-align: center; box-sizing: border-box; overflow: hidden; word-wrap: break-word; overflow-wrap: break-word; }
         .img-meta-price { font-weight: 800; color: #0d9488; margin-bottom: 6px; font-size: 22px; }
-        .img-meta-desc { color: #334155; font-size: 20px; white-space: pre-line; }
+        .img-meta-desc { color: #334155; font-size: 20px; white-space: pre-line; word-wrap: break-word; overflow-wrap: break-word; }
     </style>
 </head>
 <body>
 
 <div class="interface">
     <div class="controls">
-        <h2 style="color: var(--brand); margin-top:0; text-align:center;">Master Poster — Gyroplane-Train</h2>
+        <h2 style="color: var(--brand); margin-top:0; text-align:center;">Gyroplane-Train</h2>
 
         <input type="text" id="vidTitle" placeholder="MAIN TITLE">
         <input type="text" id="vidSub" placeholder="SUBTITLE">
@@ -83,7 +83,7 @@
         <label class="audio-btn">🎵 UPLOAD TRACK (MP4/MP3) <input type="file" id="audioInput" accept="audio/*,video/mp4" style="display:none" onchange="loadAudio(event)"></label>
         <div id="audioStatus" style="font-size:11px; color:var(--muted); margin-bottom:15px; text-align:center;">No track loaded.</div>
 
-        <button onclick="record()" class="insta-btn">📸 START INSTA-READY PRODUCTION</button>
+        <button id="recordBtn" onclick="record()" class="insta-btn">📸 START INSTA-READY PRODUCTION</button>
 
         <div id="status" style="margin-top:10px; color: var(--brand); font-weight: bold; text-align:center;">System Standby.</div>
         <a id="dlLink" href="#" style="display:none">Download</a>
@@ -109,7 +109,6 @@
     let alignIndex = -1, transMode = 'melt', audioBuffer = null, audioCtx = null;
     let overlayPos = 'bottom';
 
-    // Theme for canvas/video export (matches this client's colours)
     const THEME = {
         bg: '#ffffff',
         titleBar: '#0d9488',
@@ -170,7 +169,7 @@
             </div>
             <input type="file" onchange="loadImg(event, ${i})" style="width:100%; font-size:10px; margin-top:5px;">
             <input type="text" placeholder="Price Tag (e.g. $40)" style="margin-top:6px; font-size:11px;" oninput="setPrice(${i}, this.value)">
-            <textarea placeholder="Short description" rows="3" style="margin-top:4px; font-size:11px; width:100%; resize:vertical; box-sizing:border-box;" oninput="setDesc(${i}, this.value)"></textarea>
+            <textarea placeholder="Short description" rows="3" style="margin-top:4px; font-size:11px; width:100%; resize:vertical; box-sizing:border-box; padding:5px;" oninput="setDesc(${i}, this.value)"></textarea>
         `;
         inputContainer.appendChild(div);
         const thumb = document.createElement('div'); thumb.className = 'thumb-box'; thumb.id = `thumb-${i}`;
@@ -218,6 +217,7 @@
     function updateStage() {
         const stage = document.getElementById('stage');
         const metaPanel = document.getElementById('meta-panel');
+        if (!stage) return;
         stage.innerHTML = '';
         if (metaPanel) metaPanel.innerHTML = '';
         if (metaPanel) {
@@ -248,40 +248,36 @@
         if(activeImages.length < 2) return alert("Upload at least 2 images.");
         if(!audioBuffer) return alert("Upload audio track first.");
 
+        document.getElementById('recordBtn').disabled = true;
+        document.getElementById('status').innerText = "PREPARING...";
+
         const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
         canvas.width = 1080;
         canvas.height = 1920;
 
-        const stream = canvas.captureStream(30);
+        // --- INSTAGRAM OPTIMIZED RECORDER ---
+        const stream = canvas.captureStream(30); 
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         const dest = audioCtx.createMediaStreamDestination();
         const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer; source.connect(dest); source.connect(audioCtx.destination);
-        stream.addTrack(dest.stream.getAudioTracks()[0]); source.start(0);
+        source.buffer = audioBuffer; 
+        source.connect(dest); 
+        source.connect(audioCtx.destination);
+        stream.addTrack(dest.stream.getAudioTracks()[0]);
 
-        const SLIDE_DURATION_MS = 20000;
-        const TRANS_DURATION_MS = 2000;
-        const totalDuration = activeImages.length * SLIDE_DURATION_MS;
-
-        const width = canvas.width, height = canvas.height;
-        const videoBitrate = (width * height >= 1080 * 1920) ? 12000000 : 8000000;
-        const audioBitrate = 256000;
+        // Prioritize H.264 (AVC) for Instagram mobile compatibility
+        const videoBitrate = 6000000; // 6Mbps - Stable for Reels
+        const audioBitrate = 128000;
         const mimeCandidates = [
-            'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-            'video/mp4; codecs="avc1.42E01E"',
+            'video/mp4; codecs="avc1.42E01E, mp4a.40.2"', // Best for mobile
             'video/mp4',
-            'video/webm; codecs="vp9, opus"',
-            'video/webm; codecs="vp9"',
-            'video/webm'
+            'video/webm; codecs=vp9'
         ];
         let chosenMime = 'video/webm';
         for (const m of mimeCandidates) {
-            if (MediaRecorder.isTypeSupported(m)) {
-                chosenMime = m;
-                break;
-            }
+            if (MediaRecorder.isTypeSupported(m)) { chosenMime = m; break; }
         }
-        const useMp4 = chosenMime.startsWith('video/mp4');
+
         const recOptions = {
             mimeType: chosenMime,
             videoBitsPerSecond: videoBitrate,
@@ -292,18 +288,28 @@
         const chunks = [];
         rec.ondataavailable = e => chunks.push(e.data);
         rec.onstop = () => {
-            source.stop();
             const blob = new Blob(chunks, { type: chosenMime });
+            const url = URL.createObjectURL(blob);
             const dl = document.getElementById('dlLink');
-            dl.href = URL.createObjectURL(blob);
-            dl.download = 'gyroplane_train_insta_final.' + (useMp4 ? 'mp4' : 'webm');
+            dl.href = url;
+            dl.download = 'insta_reel_' + Date.now() + (chosenMime.includes('mp4') ? '.mp4' : '.webm');
             dl.click();
-            document.getElementById('status').innerText = "DONE!";
+            document.getElementById('status').innerText = "DONE! CHECK DOWNLOADS";
+            document.getElementById('recordBtn').disabled = false;
         };
 
-        rec.start(100);
+        rec.start();
+        source.start(0);
+        // --- END OPTIMIZED RECORDER ---
+
+        const SLIDE_DURATION_MS = 10000; // 10s per slide → 60s total for 6 images (Instagram allows up to 3 min, 4GB)
+        const TRANS_DURATION_MS = 1000; 
+        const totalDuration = activeImages.length * SLIDE_DURATION_MS;
+
         let startTime = null;
-        const scriptVal = document.getElementById('mainScript').value, titleVal = document.getElementById('vidTitle').value.toUpperCase(), subVal = document.getElementById('vidSub').value;
+        const scriptVal = document.getElementById('mainScript').value;
+        const titleVal = document.getElementById('vidTitle').value.toUpperCase();
+        const subVal = document.getElementById('vidSub').value;
 
         function render(t) {
             if(!startTime) startTime = t;
@@ -312,15 +318,12 @@
             ctx.fillStyle = THEME.bg;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const instaPadH = 80;
             const instaTitleTop = 80, instaTitleH = 120;
             const instaSubTop = 200, instaSubH = 120;
             const instaTextTop = 320, instaTextH = 360;
             const instaImgTop = 680, instaImgH = 1240;
-            const imgAreaW = 1080, imgAreaH = instaImgH;
-            const imgBaseX = 0, imgBaseY = instaImgTop;
-            const textStartX = 0, textFrameW = 1080;
 
+            // Title
             ctx.fillStyle = THEME.titleBar;
             ctx.fillRect(0, instaTitleTop, canvas.width, instaTitleH);
             ctx.fillStyle = THEME.titleText;
@@ -328,132 +331,111 @@
             ctx.textAlign = "center";
             ctx.fillText(titleVal, 540, instaTitleTop + 78);
 
+            // Subtitle
             ctx.fillStyle = THEME.subtitleBar;
             ctx.fillRect(0, instaSubTop, canvas.width, instaSubH);
             ctx.fillStyle = THEME.subtitleText;
             ctx.font = "bold 32px Segoe UI";
             ctx.fillText(subVal, 540, instaSubTop + 78);
 
+            // Transition Logic
             const gProg = Math.min(elap / totalDuration, 1);
-            const segmentIndex = Math.min(Math.floor(elap / SLIDE_DURATION_MS), activeImages.length - 1);
+            const segmentIndex = Math.floor(elap / SLIDE_DURATION_MS);
             const withinSegment = elap % SLIDE_DURATION_MS;
             const inTransition = withinSegment >= (SLIDE_DURATION_MS - TRANS_DURATION_MS) && (segmentIndex + 1) < activeImages.length;
-            const transProgress = inTransition
-                ? (withinSegment - (SLIDE_DURATION_MS - TRANS_DURATION_MS)) / TRANS_DURATION_MS
-                : 0;
+            const transProgress = inTransition ? (withinSegment - (SLIDE_DURATION_MS - TRANS_DURATION_MS)) / TRANS_DURATION_MS : 0;
             const sP = Math.max(0, Math.min(transProgress, 1));
 
             const iA = activeImages[segmentIndex];
             const iB = inTransition ? activeImages[segmentIndex + 1] : null;
             const activeMeta = sP >= 0.5 && iB ? iB : iA;
 
+            // Image Area Render
             ctx.save();
             ctx.beginPath();
-            ctx.rect(imgBaseX, imgBaseY, imgAreaW, instaImgH);
+            ctx.rect(0, instaImgTop, 1080, instaImgH);
             ctx.clip();
 
-            if (!iA || !iA.imgObj) {
-            } else if (!inTransition || !iB || !iB.imgObj) {
-                ctx.translate(imgBaseX + iA.x, imgBaseY + iA.y);
-                ctx.scale(iA.s, iA.s);
-                ctx.drawImage(iA.imgObj, 0, 0, imgAreaW, imgAreaH);
-            } else {
-                [iA, iB].forEach((img, i) => {
-                    if (!img.imgObj) return;
-                    ctx.save();
-                    const xBase = imgBaseX + img.x, yBase = imgBaseY + img.y;
-                    if (transMode === 'swipe') {
-                        const xOff = (i === 0) ? -sP * imgAreaW : imgAreaW - (sP * imgAreaW);
-                        ctx.translate(xBase + xOff, yBase);
-                    } else if (transMode === 'dissolve') {
-                        ctx.globalAlpha = (i === 0) ? 1 - sP : sP;
-                        ctx.translate(xBase, yBase);
-                    } else if (transMode === 'swap') {
-                        ctx.globalAlpha = (sP < 0.5 && i === 0) || (sP >= 0.5 && i === 1) ? 1 : 0;
-                        ctx.translate(xBase, yBase);
-                    } else {
-                        ctx.globalAlpha = (i === 0) ? 1 : sP;
-                        ctx.translate(xBase, yBase);
-                    }
-                    ctx.scale(img.s, img.s);
-                    ctx.drawImage(img.imgObj, 0, 0, imgAreaW, imgAreaH);
-                    ctx.restore();
-                });
-            }
+            [iA, iB].forEach((img, i) => {
+                if (!img || !img.imgObj) return;
+                ctx.save();
+                ctx.globalAlpha = (i === 0) ? 1 - sP : sP;
+                ctx.translate(img.x, instaImgTop + img.y);
+                ctx.scale(img.s, img.s);
+                ctx.drawImage(img.imgObj, 0, 0, 1080, instaImgH);
+                ctx.restore();
+            });
             ctx.restore();
 
+            // Metadata Box — 5px padding, text fits box, centered
             if (activeMeta && (activeMeta.price || activeMeta.desc)) {
-                const pad = 5, margin = 40, radius = 14;
-                ctx.font = "bold 36px Segoe UI";
-                const priceW = activeMeta.price ? ctx.measureText(activeMeta.price).width : 0;
-                ctx.font = "24px Segoe UI";
-                const desc = (activeMeta.desc || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-                const maxChars = 35;
-                const descLines = [];
-                desc.split("\n").forEach(paragraph => {
-                    let line = "";
-                    paragraph.split(" ").forEach(word => {
-                        const test = line ? line + " " + word : word;
-                        if (test.length > maxChars && line) {
-                            descLines.push(line);
-                            line = word;
-                        } else {
-                            line = test;
-                        }
-                    });
-                    if (line.trim()) descLines.push(line.trim());
-                });
-                let descW = 0;
-                descLines.forEach(l => { descW = Math.max(descW, ctx.measureText(l).width); });
-                const boxW = Math.max(priceW, descW) + pad * 2;
-                const lineH = 26;
-                const boxH = pad + (activeMeta.price ? 36 + (descLines.length ? 8 : 0) : 0) + descLines.length * lineH + pad;
-                const boxX = 1080 - boxW - margin;
-                const isTop = overlayPos === 'top';
-                const boxY = isTop ? (imgBaseY + 40) : (imgBaseY + instaImgH - boxH - 40);
+                const margin = 40, innerPad = 5;
+                const priceFont = "bold 36px Segoe UI", descFont = "20px Segoe UI";
+                const priceLineH = 40, descLineH = 24;
+                const maxDescLinePx = 400;
 
-                ctx.save();
+                const lines = [];
+                if (activeMeta.price) {
+                    lines.push({ text: activeMeta.price.trim(), font: priceFont, lineH: priceLineH });
+                }
+                if (activeMeta.desc) {
+                    ctx.font = descFont;
+                    (activeMeta.desc || "").split("\n").forEach(paragraph => {
+                        let line = "";
+                        paragraph.split(" ").forEach(word => {
+                            const test = line ? line + " " + word : word;
+                            if (ctx.measureText(test).width > maxDescLinePx && line) {
+                                lines.push({ text: line.trim(), font: descFont, lineH: descLineH });
+                                line = word;
+                            } else {
+                                line = line ? line + " " + word : word;
+                            }
+                        });
+                        if (line.trim()) lines.push({ text: line.trim(), font: descFont, lineH: descLineH });
+                    });
+                }
+
+                let boxW = 0;
+                lines.forEach(l => {
+                    ctx.font = l.font;
+                    const w = ctx.measureText(l.text).width;
+                    if (w > boxW) boxW = w;
+                });
+                boxW = Math.ceil(boxW) + innerPad * 2;
+                const boxH = lines.reduce((sum, l) => sum + l.lineH, 0) + innerPad * 2;
+                const boxX = 1080 - boxW - margin;
+                const boxY = overlayPos === 'top' ? (instaImgTop + 40) : (instaImgTop + instaImgH - boxH - 40);
+
                 ctx.fillStyle = THEME.metaBoxBg;
                 ctx.beginPath();
-                ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+                ctx.roundRect(boxX, boxY, boxW, boxH, 15);
                 ctx.fill();
 
                 ctx.textAlign = "center";
-                const centerX = boxX + boxW / 2;
-                let y = boxY + pad;
-                if (activeMeta.price) {
-                    ctx.fillStyle = THEME.metaPrice;
-                    ctx.font = "bold 36px Segoe UI";
-                    ctx.fillText(activeMeta.price, centerX, y + 28);
-                    y += 36 + 8;
-                }
-                if (descLines.length) {
-                    ctx.fillStyle = THEME.metaDesc;
-                    ctx.font = "24px Segoe UI";
-                    descLines.forEach(l => {
-                        ctx.fillText(l, centerX, y + 20);
-                        y += lineH;
-                    });
-                }
-                ctx.restore();
+                let y = boxY + innerPad;
+                lines.forEach(l => {
+                    ctx.font = l.font;
+                    ctx.fillStyle = l.font === priceFont ? THEME.metaPrice : THEME.metaDesc;
+                    ctx.fillText(l.text, boxX + boxW/2, y + l.lineH * 0.78);
+                    y += l.lineH;
+                });
             }
 
-            const textAreaTop = instaTextTop;
-            const textAreaHeight = instaTextH;
-            const padX = 60;
-            const padY = 40;
+            // Main Text Panel — auto-resize to fit container, centered
+            const textFrameW = 1080;
+            const padX = 60, padY = 40;
             const maxWidth = textFrameW - padX * 2;
             const lineSpacingMult = 1.55;
 
             ctx.fillStyle = THEME.textPanelBg;
-            ctx.fillRect(0, textAreaTop, textFrameW, textAreaHeight);
+            ctx.fillRect(0, instaTextTop, textFrameW, instaTextH);
             ctx.fillStyle = THEME.textPanelInk;
             ctx.textAlign = "center";
 
             function wrapLinesForFs(fs) {
                 ctx.font = `bold ${fs}px Segoe UI`;
                 const res = [];
-                scriptVal.split('\n').forEach(p => {
+                (scriptVal || "").split('\n').forEach(p => {
                     const words = p.split(' ').filter(Boolean);
                     let line = "";
                     words.forEach(word => {
@@ -476,25 +458,31 @@
                 lines = wrapLinesForFs(fs);
                 lineH = fs * lineSpacingMult;
                 const needed = lines.length * lineH;
-                if (needed <= (textAreaHeight - padY * 2)) break;
+                if (needed <= (instaTextH - padY * 2)) break;
                 fs -= 1;
             }
 
             ctx.save();
             ctx.beginPath();
-            ctx.rect(0, textAreaTop, textFrameW, textAreaHeight);
+            ctx.rect(0, instaTextTop, textFrameW, instaTextH);
             ctx.clip();
 
             const totalTextHeight = lines.length * lineH;
-            const startY = textAreaTop + (textAreaHeight - totalTextHeight) / 2 + fs;
+            const startY = instaTextTop + (instaTextH - totalTextHeight) / 2 + fs;
             lines.forEach((l, i) => {
-                ctx.fillText(l, textStartX + textFrameW / 2, startY + i * lineH);
+                ctx.font = `bold ${fs}px Segoe UI`;
+                ctx.fillText(l, 540, startY + i * lineH);
             });
 
             ctx.restore();
 
-            if(gProg < 1) { requestAnimationFrame(render); document.getElementById('status').innerText = `PRODUCING: ${Math.round(gProg * 100)}%`; }
-            else { rec.stop(); }
+            if(gProg < 1) { 
+                requestAnimationFrame(render); 
+                document.getElementById('status').innerText = `PRODUCING: ${Math.round(gProg * 100)}%`; 
+            } else { 
+                rec.stop(); 
+                source.stop();
+            }
         }
         requestAnimationFrame(render);
     }
